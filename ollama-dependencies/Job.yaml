@@ -1,0 +1,163 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-dependencies
+  namespace: ollama
+  annotations:
+    reloader.stakater.com/match: "true"
+spec:
+  template:
+    spec:
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+          effect: "NoSchedule"
+      nodeSelector:
+        system-pool: "true"
+      containers:
+        - name: check-cert
+          image: ghcr.io/amerintlxperts/k8s-utilities:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              env > /tmp/env_vars
+              /scripts/init-script.sh
+              echo "Checking if the certificate secret is populated..."
+              certificate_ready=false
+
+              while [ "$certificate_ready" = false ]; do
+                if kubectl get secret ollama-tls -n ollama -o jsonpath='{.data.tls\.crt}' | base64 -d | grep -q 'BEGIN CERTIFICATE'; then
+                  echo "Certificate secret is ready."
+                  certificate_ready=true
+                else
+                  echo "Waiting for certificate to be ready..."
+                  sleep 5
+                fi
+              done
+              error_exit() {
+                  echo "Error: $1" >&2
+                  exit 1
+              }
+
+              log_info() {
+                  echo "Info: $1"
+              }
+
+              log_info "Checking if the certificate secret is populated..."
+              while true; do
+                if kubectl get secret ollama-tls -n ollama -o jsonpath='{.data.tls\.crt}' | base64 -d | grep -q 'BEGIN CERTIFICATE'; then
+                  log_info "Certificate secret is ready."
+                  break
+                fi
+                log_info "Waiting for certificate to be ready..."
+                sleep 5
+              done
+
+              LETSENCRYPT_SIGNED_CERT="ollama-tls.pem"
+              kubectl get secret ollama-tls -n ollama -o jsonpath="{.data['tls\.crt']}" | base64 --decode > "$LETSENCRYPT_SIGNED_CERT"
+
+              if [[ ! -f "$LETSENCRYPT_SIGNED_CERT" ]]; then
+                error_exit "Certificate file '$LETSENCRYPT_SIGNED_CERT' not found."
+              fi
+
+              INTERMEDIATE_URL=$(openssl x509 -in "$LETSENCRYPT_SIGNED_CERT" -noout -text |
+                grep -m 1 'CA Issuers - URI:' |
+                sed 's#.*URI:\s*\(.*\)#\1#')
+
+              if [[ -z "$INTERMEDIATE_URL" ]]; then
+                error_exit "Failed to extract INTERMEDIATE_URL from '$LETSENCRYPT_SIGNED_CERT'."
+              fi
+
+              log_info "Intermediate Certificate URL: $INTERMEDIATE_URL"
+
+              INTERMEDIATE_CERT="intermediate.der"
+              INTERMEDIATE_CERT_PEM="intermediate.pem"
+              curl --silent -fSL -o "$INTERMEDIATE_CERT" "$INTERMEDIATE_URL" || error_exit "Failed to download intermediate certificate."
+
+              log_info "Converting intermediate certificate from DER to PEM format..."
+              openssl x509 -in "$INTERMEDIATE_CERT" -out "$INTERMEDIATE_CERT_PEM" -outform PEM || error_exit "Failed to convert intermediate certificate to PEM format."
+
+              log_info "Intermediate certificate successfully converted to PEM format: $INTERMEDIATE_CERT_PEM"
+
+              CERT_CONTENT=$(tr -d '\0\n\r' < "$INTERMEDIATE_CERT_PEM") || error_exit "Failed to process intermediate certificate."
+
+              if [[ -z "$CERT_CONTENT" ]]; then
+                error_exit "Normalized certificate content is empty."
+              fi
+
+              log_info "Certificate content ready."
+
+              USERNAME=$(kubectl get secret fortiweb-login-secret -o jsonpath="{.data.username}" | base64 -d)
+              PASSWORD=$(kubectl get secret fortiweb-login-secret -o jsonpath="{.data.password}" | base64 -d)
+
+              if [[ -z "$USERNAME" || -z "$PASSWORD" ]]; then
+                error_exit "Could not retrieve username or password from the secret."
+              fi
+
+              TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
+
+              log_info "Uploading intermediate certificate..."
+              cat "$INTERMEDIATE_CERT_PEM"
+              # Run the curl command and capture the response
+              response=$(curl 'https://10.0.0.4/api/v2.0/system/certificate.intermediateca' \
+                           --verbose \
+                           --silent \
+                           --insecure \
+                           -X 'POST' \
+                           -H "Authorization:$TOKEN" \
+                           -H 'Accept: application/json, text/plain, */*' \
+                           -H 'Sec-Fetch-Site: same-origin' \
+                           -H 'Accept-Language: en-US,en;q=0.9' \
+                           -H 'Accept-Encoding: gzip, deflate, br' \
+                           -H 'Sec-Fetch-Mode: cors' \
+                           -H 'Origin: https://10.0.0.4' \
+                           -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15' \
+                           -H 'Referer: https://10.0.0.4/root/system/inter-ca/inter-ca-import' \
+                           -H 'Connection: keep-alive' \
+                           -F 'type=localPC' \
+                           -F "uploadedFile=@$INTERMEDIATE_CERT_PEM;filename=12396132896.crt;type=application/x-x509-ca-cert")
+
+              # Parse the _id value from the JSON response
+              _id=$(echo "$response" | jq -r '._id')
+              INTERMEDIATE_CERT_ID="$_id"
+              log_info "Uploaded $INTERMEDIATE_CERT_ID"
+
+              log_info "Creating intermediate certificate group."
+              curl -X POST "https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group" \
+                --insecure \
+                --include \
+                --silent \
+                -H "Authorization:$TOKEN" \
+                -H "Content-Type: application/json" \
+                --data-binary '{"data":{"name":"ollama_ollama_ca-group"}}' || error_exit "Failed to create certificate group."
+
+              log_info "Adding intermediate certificate $INTERMEDIATE_CERT_ID to the group ollama_ollama_ca-group"
+              curl -X POST "https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group/members?mkey=ollama_ollama_ca-group" \
+                --insecure \
+                --include \
+                --silent \
+                -H "Authorization:$TOKEN" \
+                -H "Content-Type: application/json" \
+                --data-binary "{\"data\":{\"name\":\"$INTERMEDIATE_CERT_ID\"}}" || error_exit "Failed to add certificate to the group."
+
+              log_info "Job completed successfully."
+          volumeMounts:
+            - name: ollama-init-script-volume
+              mountPath: /scripts
+            - name: openapifile-volume
+              mountPath: /files
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+      restartPolicy: Never
+      volumes:
+        - name: ollama-init-script-volume
+          configMap:
+            name: ollama-init-script-configmap
+            defaultMode: 0755
+        - name: openapifile-volume
+          configMap:
+            name: openapifile-configmap

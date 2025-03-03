@@ -1,0 +1,46 @@
+---
+name: pretix-version
+on:
+  push:
+    paths:
+      - 'pretix/**'
+      - 'pretix-dependencies/**'
+  repository_dispatch:
+    types: [pretix-version]
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+permissions:
+  id-token: write
+  contents: write
+jobs:
+  docs-version:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+
+      - name: Setup Git Configuration
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Process fqdn
+        run: |
+          export DOMAIN_NAME="${{ vars.PRETIX_FQDN }}"
+          envsubst < pretix-dependencies/certificate.yaml > pretix-dependencies/certificate.processed.yaml
+          mv pretix-dependencies/certificate.processed.yaml pretix-dependencies/certificate.yaml
+
+      - name: Commit and Push Changes
+        run: |
+          git add .
+          if git diff-index --quiet HEAD --; then
+            echo "No changes to commit"
+          else
+            git commit -m "Process Dispatch"
+            git push -f origin main:pretix-version
+          fi

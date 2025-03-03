@@ -1,0 +1,9 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: techwolf12
+  namespace: cluster-config
+spec:
+  interval: 30m
+  url: https://helm.techwolf12.nl/

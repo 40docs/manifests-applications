@@ -1,0 +1,38 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: docs
+  namespace: docs
+  annotations: {
+    fortiweb-ip: "10.0.0.4",
+    fortiweb-login: "fortiweb-login-secret",
+    fortiweb-port: "443",
+    fortiweb-ctrl-log: "disable",
+    virtual-server-ip: "10.0.0.5",
+    virtual-server-addr-type: "ipv4",
+    virtual-server-interface: "port1",
+    server-policy-https-service: "HTTPS",
+    server-policy-http-service: "HTTP",
+    server-policy-syn-cookie: "enable",
+    server-policy-http-to-https: "enable",
+    server-policy-intermediate-certificate-group: "docs_docs_ca-group",
+    server-policy-web-protection-profile: "Inline Standard Protection"
+  }
+spec:
+  ingressClassName: fwb-ingress-controller
+  tls:
+    - secretName: docs-tls
+      hosts:
+        - $DOMAIN_NAME
+  rules:
+    - host: $DOMAIN_NAME
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: docs
+                port:
+                  number: 8080

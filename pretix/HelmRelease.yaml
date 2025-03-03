@@ -1,0 +1,54 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: pretix
+  namespace: cluster-config
+spec:
+  targetNamespace: pretix
+  releaseName: pretix
+  chart:
+    spec:
+      chart: pretix
+      sourceRef:
+        kind: HelmRepository
+        name: techwolf12
+        namespace: cluster-config
+  interval: 10m0s
+  install:
+    timeout: 20m
+    remediation:
+      retries: 5
+  upgrade:
+    timeout: 20m
+  values:
+    ingress:
+      enabled: true
+      className: "fwb-ingress-controller"
+      annotations: {
+        fortiweb-ip: "10.0.0.4",
+        fortiweb-login: "fortiweb-login-secret",
+        fortiweb-port: "443",
+        virtual-server-ip: "10.0.0.7",
+        virtual-server-addr-type: "ipv4",
+        virtual-server-interface: "port1",
+        server-policy-https-service: "HTTPS",
+        server-policy-http-service: "HTTP",
+        server-policy-syn-cookie: "enable",
+        server-policy-intermediate-certificate-group: "pretix_pretix_ca-group",
+        server-policy-http-to-https: "enable"
+      }
+      tls:
+        - secretName: pretix-tls
+          hosts:
+            - "$DOMAIN_NAME"
+      hosts:
+        - host: "$DOMAIN_NAME"
+          paths:
+            - path: /
+              pathType: Prefix
+    service:
+      type: NodePort
+      annotations: {
+        "health-check-ctrl": "HLTHCK_HTTP"
+      }

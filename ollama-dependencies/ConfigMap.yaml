@@ -1,0 +1,229 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ollama-init-script-configmap
+  namespace: ollama
+data:
+  init-script.sh: |
+    #!/bin/bash
+    set -o errexit
+    set -o nounset
+
+    # If DEBUG_MODE is set to "true" in /tmp/env_vars, we enable tracing
+    if [ -f /tmp/env_vars ]; then
+        . /tmp/env_vars
+    fi
+    if [ "${DEBUG_MODE:-false}" = "true" ]; then
+        set -x
+    fi
+
+    log() {
+        echo "$(date +"%Y-%m-%d %H:%M:%S") - $1"
+    }
+
+    MAX_RETRIES=30
+    RETRY_DELAY=10
+
+    FORTIWEB_HOST="https://10.0.0.4:443"
+    URL_PREFIX="${FORTIWEB_HOST}/api/v2.0"
+    KUBERNETES_API="https://kubernetes.default.svc"
+    TOKEN_PATH="/var/run/secrets/kubernetes.io/serviceaccount/token"
+    CA_CERT_PATH="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+    NAMESPACE_PATH="/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+
+    log "Loading environment variables..."
+    if [ -f /tmp/env_vars ]; then
+        set -o allexport
+        . /tmp/env_vars
+        set +o allexport
+    else
+        log "Warning: /tmp/env_vars file not found. Proceeding without it."
+    fi
+
+    log "Validating Kubernetes service account credentials..."
+    if [ ! -f "$TOKEN_PATH" ] || [ ! -f "$CA_CERT_PATH" ]; then
+        log "Error: Missing Kubernetes service account token or CA certificate."
+        exit 1
+    fi
+
+    TOKEN=$(cat "$TOKEN_PATH")
+    NAMESPACE=$(cat "$NAMESPACE_PATH")
+
+    log "Checking for kubectl binary..."
+    log "Current PATH: $PATH"
+    if command -v kubectl &>/dev/null; then
+        KUBECTL_PATH="$(command -v kubectl)"
+        log "kubectl found at: $KUBECTL_PATH"
+        ls -l "$KUBECTL_PATH" || log "Unable to list $KUBECTL_PATH"
+    else
+        log "Error: kubectl command not found. Please ensure kubectl is installed."
+        exit 1
+    fi
+
+    log "Checking kubectl version..."
+    if ! kubectl version --client >/dev/null 2>&1; then
+        log "Error: kubectl is found but cannot retrieve version information. It may be corrupted or not functional."
+        log "Debug: Attempting 'kubectl version --client' directly:"
+        kubectl version --client || log "Failed to run 'kubectl version --client'"
+        exit 1
+    fi
+    log "kubectl is installed and functional."
+
+    retry_command() {
+        local attempt=0
+        local exit_code=0
+
+        log "Will attempt command up to $MAX_RETRIES times: $*"
+        while [ $attempt -lt $MAX_RETRIES ]; do
+            log "Attempt $((attempt + 1)): Executing command: $*"
+            if "$@"; then
+                log "Command succeeded on attempt $((attempt + 1))"
+                return 0
+            fi
+            exit_code=$?
+            log "Command failed with exit code $exit_code. Retrying in $RETRY_DELAY seconds..."
+            attempt=$((attempt + 1))
+            sleep $RETRY_DELAY
+        done
+
+        log "Error: Command failed after $MAX_RETRIES attempts."
+        return $exit_code
+    }
+
+    check_kubeapi_availability() {
+        log "Checking Kubernetes API availability..."
+        if ! retry_command curl --include --insecure --silent --fail \
+            --cacert "$CA_CERT_PATH" \
+            -H "Authorization: Bearer $TOKEN" \
+            "$KUBERNETES_API/version"; then
+            log "Error: Kubernetes API is not reachable."
+            exit 1
+        fi
+    }
+
+    get_secret_value() {
+        local field=$1
+        log "Retrieving secret value for field: $field"
+        log "Debug: Listing all secrets in namespace '$NAMESPACE'..."
+        kubectl --server="$KUBERNETES_API" --token="$TOKEN" \
+            --certificate-authority="$CA_CERT_PATH" -n "$NAMESPACE" get secrets || log "Debug: Failed to list secrets."
+
+        log "Debug: Describing 'fortiweb-login-secret'..."
+        kubectl --server="$KUBERNETES_API" --token="$TOKEN" \
+            --certificate-authority="$CA_CERT_PATH" -n "$NAMESPACE" describe secret fortiweb-login-secret || log "Debug: Failed to describe secret."
+
+        log "Debug: Attempting to retrieve field '$field' from the secret..."
+        local secret_data
+        secret_data=$(retry_command kubectl --server="$KUBERNETES_API" --token="$TOKEN" \
+            --certificate-authority="$CA_CERT_PATH" -n "$NAMESPACE" \
+            get secret fortiweb-login-secret -o "jsonpath={.data.${field}}" 2>&1) || {
+            log "Error: Failed to retrieve secret field: $field"
+            log "Debug: kubectl output: $secret_data"
+            exit 1
+        }
+
+        log "Debug: Raw base64 data for field '$field' length: ${#secret_data}"
+        if [ -z "$secret_data" ]; then
+            log "Error: Secret field '$field' is empty or not found."
+            exit 1
+        fi
+
+        local decoded_value
+        if ! decoded_value=$(echo "$secret_data" | base64 -d 2>/dev/null); then
+            log "Error: Failed to decode secret field: $field"
+            exit 1
+        fi
+        log "Debug: Successfully decoded secret field '$field'. (Value redacted)"
+        echo "$decoded_value"
+    }
+
+    perform_request() {
+        local method="$1"
+        local endpoint="$2"
+        shift 2
+
+        local url="${URL_PREFIX}${endpoint}"
+        log "Performing API request: $method $url"
+        local response
+        response=$(curl --insecure --silent --show-error \
+            -H "Authorization: $INGRESS_TOKEN" \
+            -X "$method" "$url" "$@" 2>&1) || {
+            log "Error: API request failed for $url. Response: $response"
+            exit 1
+        }
+
+        echo "$response"
+    }
+
+    log "Starting initialization script..."
+    check_kubeapi_availability
+
+    log "Fetching credentials from Kubernetes secret..."
+
+    USERNAME=$(kubectl get secret fortiweb-login-secret -o jsonpath="{.data.username}" | base64 -d)
+    PASSWORD=$(kubectl get secret fortiweb-login-secret -o jsonpath="{.data.password}" | base64 -d)
+    if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
+        echo "Error: Could not retrieve username or password from the secret."
+        exit 1
+    fi
+
+    #USERNAME=$(get_secret_value username)
+    #log "Debug: USERNAME retrieved. Length: ${#USERNAME}"
+    #PASSWORD=$(get_secret_value password)
+    #log "Debug: PASSWORD retrieved. Length: ${#PASSWORD}"
+
+    if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
+        log "Error: Missing username or password in secret."
+        exit 1
+    fi
+
+    log "Credentials retrieved: USERNAME and PASSWORD are set."
+
+    log "Generating ingress token..."
+    INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
+    #INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 -w 0 || echo "")
+    if [ -z "$INGRESS_TOKEN" ]; then
+        INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 || echo "")
+    fi
+
+    if [ -z "$INGRESS_TOKEN" ]; then
+        log "Error: Failed to generate ingress token."
+        exit 1
+    fi
+    log "Ingress token generated successfully."
+
+    log "Uploading OpenAPI schema file..."
+    if ! curl --insecure -H "Authorization:$INGRESS_TOKEN" -H "Content-Type: multipart/form-data" \
+        -F 'openapifile=@/files/openapi.yaml' \
+        "${FORTIWEB_HOST}/api/v2.0/waf/openapi.openapischemafile"; then
+        log "Error uploading OpenAPI file"
+        exit 1
+    fi
+    log "OpenAPI schema file uploaded."
+
+    log "Creating OpenAPI validation policy..."
+    perform_request POST "/cmdb/waf/openapi-validation-policy" \
+        -H 'Content-Type: application/json;charset=utf-8' \
+        --data-binary '{"data":{"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":-1}}'
+    log "OpenAPI validation policy created."
+
+    log "Associating schema file with the validation policy..."
+    perform_request POST "/cmdb/waf/openapi-validation-policy/schema-file?mkey=ollama" \
+        -H 'Content-Type: application/json;charset=utf-8' \
+        --data-binary '{"data":{"openapi-file":"openapi.yaml"}}'
+    log "Schema file associated with the validation policy."
+
+    log "Finalizing OpenAPI validation policy configuration..."
+    perform_request PUT "/cmdb/waf/openapi-validation-policy?mkey=ollama" \
+        -H 'Content-Type: application/json;charset=utf-8' \
+        --data-binary '{"data":{"can_view":0,"q_ref":0,"can_clone":1,"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":0}}'
+    log "OpenAPI validation policy configuration finalized."
+
+    log "Creating web-protection profile using the new policy..."
+    perform_request POST "/cmdb/waf/web-protection-profile.inline-protection" \
+        -H 'Content-Type: application/json;charset=utf-8' \
+        --data-binary '{"data":{"name":"ollama","client-management":"enable","amf3-protocol-detection":"disable","mobile-app-identification":"disable","token-header":"Jwt-Token","ip-intelligence":"disable","fortigate-quarantined-ips":"disable","quarantined-ip-action":"alert","quarantined-ip-severity":"High","rdt-reason":"disable","openapi-validation-policy":"ollama"}}'
+    log "Web-protection profile created successfully."
+
+    log "Script completed successfully."

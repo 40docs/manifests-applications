@@ -1,0 +1,59 @@
+---
+name: docs-version
+on:
+  push:
+    paths:
+      - 'docs/**'
+      - 'docs-dependencies/**'
+  repository_dispatch:
+    types: [docs-version]
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+permissions:
+  id-token: write
+  contents: write
+jobs:
+  docs-version:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+
+      - name: Setup Git Configuration
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Process fqdn
+        run: |
+          export DOMAIN_NAME="${{ vars.DOCS_FQDN }}"
+          envsubst < docs-dependencies/certificate.yaml > docs-dependencies/certificate.processed.yaml
+          mv docs-dependencies/certificate.processed.yaml docs-dependencies/certificate.yaml
+          envsubst < docs/Ingress.yaml > docs/Ingress.processed.yaml
+          mv docs/Ingress.processed.yaml docs/Ingress.yaml
+          yq eval -i ".spec.template.spec.containers[0].image = \"${{ secrets.ACR_LOGIN_SERVER }}/docs:${{ vars.DOCS_VERSION }}\"" "docs/Deployment.yaml"
+
+      - name: Process production variables
+        if: env.PRODUCTION_ENVIRONMENT == 'false'
+        run: |
+          sed -i '/HorizontalPodAutoscaler/Id' docs/kustomization.yaml
+          yq eval -i ".spec.replicas = 1" "docs/Deployment.yaml"
+          yq eval -i 'del(.spec.template.spec.affinity)' "docs/Deployment.yaml"
+          yq eval -i 'del(.spec.strategy)' "docs/Deployment.yaml"
+        env:
+          PRODUCTION_ENVIRONMENT: ${{ vars.PRODUCTION_ENVIRONMENT }}
+
+      - name: Commit and Push Changes
+        run: |
+          git add .
+          if git diff-index --quiet HEAD --; then
+            echo "No changes to commit"
+          else
+            git commit -m "Process Dispatch"
+            git push -f origin main:docs-version
+          fi

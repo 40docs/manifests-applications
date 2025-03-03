@@ -1,0 +1,90 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ollama
+  namespace: cluster-config
+spec:
+  targetNamespace: ollama
+  releaseName: ollama
+  chart:
+    spec:
+      chart: ollama
+      sourceRef:
+        kind: HelmRepository
+        name: ollama
+        namespace: cluster-config
+  interval: 10m0s
+  install:
+    timeout: 20m
+    remediation:
+      retries: 5
+  upgrade:
+    timeout: 20m
+  values:
+    runtimeClass: nvidia
+    extraEnv:
+      - name: OLLAMA_KEEP_ALIVE
+        value: "-1"
+    resources:
+      limits:
+        nvidia.com/gpu: "1"
+      requests:
+        nvidia.com/gpu: "1"
+    image:
+      tag: "latest"
+    tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+    nodeSelector:
+      accelerator: nvidia
+      agentpool: gpu
+      nvidia.com/gpu.present: "true"
+    ollama:
+      gpu:
+        enabled: true
+      models:
+        pull:
+          - nomic-embed-text
+          - llama3.2:3b
+          - llama3.1:8b
+          - gemma2:9b
+          - starcoder2:3b
+          - starcoder2:7b
+          - qwen2.5-coder:7b
+    persistentVolume:
+      enabled: true
+      size: 100Gi
+    ingress:
+      enabled: true
+      className: "fwb-ingress-controller"
+      annotations: {
+        fortiweb-ip: "10.0.0.4",
+        fortiweb-login: "fortiweb-login-secret",
+        fortiweb-port: "443",
+        virtual-server-ip: "10.0.0.7",
+        virtual-server-addr-type: "ipv4",
+        virtual-server-interface: "port1",
+        server-policy-web-protection-profile: "ollama",
+        server-policy-https-service: "HTTPS",
+        server-policy-http-service: "HTTP",
+        server-policy-syn-cookie: "enable",
+        server-policy-intermediate-certificate-group: "ollama_ollama_ca-group",
+        server-policy-http-to-https: "enable"
+      }
+      tls:
+        - secretName: ollama-tls
+          hosts:
+            - "$DOMAIN_NAME"
+      hosts:
+        - host: "$DOMAIN_NAME"
+          paths:
+            - path: /
+              pathType: Prefix
+    service:
+      type: NodePort
+      annotations: {
+        "health-check-ctrl": "HLTHCK_HTTP"
+      }
