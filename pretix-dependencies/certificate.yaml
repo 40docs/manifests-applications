@@ -8,9 +8,9 @@ spec:
   secretName: pretix-tls
   privateKey:
     rotationPolicy: Always
-  commonName: $DOMAIN_NAME
+  commonName: 
   dnsNames:
-    - $DOMAIN_NAME
+    - 
   usages:
     - digital signature
     - key encipherment
