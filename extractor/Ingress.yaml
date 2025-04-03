@@ -2,8 +2,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: dvwa
-  namespace: dvwa
+  name: extractor
+  namespace: extractor
   annotations: {
     fortiweb-ip: "10.0.0.4",
     fortiweb-login: "fortiweb-login-secret",
