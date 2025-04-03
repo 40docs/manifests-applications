@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: docs
+  namespace: extractor
   name: secret-reader
 rules:
   - apiGroups: [""]
@@ -12,12 +12,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  namespace: docs
+  namespace: extractor
   name: read-secrets-binding
 subjects:
   - kind: ServiceAccount
     name: default
-    namespace: docs
+    namespace: extractor
 roleRef:
   kind: Role
   name: secret-reader
