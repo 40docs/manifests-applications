@@ -1,0 +1,9 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: artifacts
+  namespace: cluster-config
+spec:
+  interval: 30m
+  url: https://charts.jfrog.io
