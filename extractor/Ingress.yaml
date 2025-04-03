@@ -1,0 +1,34 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dvwa
+  namespace: dvwa
+  annotations: {
+    fortiweb-ip: "10.0.0.4",
+    fortiweb-login: "fortiweb-login-secret",
+    fortiweb-port: "8443",
+    fortiweb-ctrl-log: "disable",
+    health-check-ctrl: "HLTHCK_HTTP",
+    virtual-server-ip: "10.0.0.10",
+    virtual-server-addr-type: "ipv4",
+    virtual-server-interface: "port1",
+    server-policy-web-protection-profile: "Inline Standard Protection",
+    server-policy-https-service: "HTTPS",
+    server-policy-http-service: "HTTP",
+    server-policy-syn-cookie: "enable",
+    server-policy-http-to-https: "disable"
+  }
+spec:
+  ingressClassName: fwb-ingress-controller
+  rules:
+    - host: extractor.40docs.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: extractor
+                port:
+                  number: 8090

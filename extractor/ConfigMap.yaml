@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: extractor-config
+  namespace: default
+data:
+  UPLOAD_DIR: "/app/uploads"  # Path where pptx files will be uploaded
+  SLIDES_DIR: "/app/slides"   # Path where slide images will be stored
+  NOTES_DIR: "/app/notes"     # Path where extracted notes will be stored
+  TEMP_DIR: "/app/temp"       # Temporary directory for intermediate files

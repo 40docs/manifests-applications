@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extractor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: extractor
+  template:
+    metadata:
+      labels:
+        app: extractor
+    spec:
+      containers:
+      - name: extractor
+        image: ghcr.io/40docs/pptx_extractor:latest  # Image name (change as needed)
+        ports:
+        - containerPort: 5000
+        envFrom:
+        - configMapRef:
+            name: extractor-config
+        volumeMounts:
+        - name: upload-volume
+          mountPath: /app/uploads
+        - name: slides-volume
+          mountPath: /app/slides
+        - name: notes-volume
+          mountPath: /app/notes
+      volumes:
+      - name: upload-volume
+        persistentVolumeClaim:
+          claimName: upload-pvc  # Reference to a PVC for storing uploaded files
+      - name: slides-volume
+        persistentVolumeClaim:
+          claimName: slides-pvc  # PVC for storing slide images
+      - name: notes-volume
+        persistentVolumeClaim:
+          claimName: notes-pvc   # PVC for storing notes

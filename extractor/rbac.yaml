@@ -1,0 +1,15 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+    name: extractor-read-svc
+    namespace: extractor
+subjects:
+    - kind: ServiceAccount
+      name: default
+      apiGroup: ""
+      namespace: extractor
+roleRef:
+    kind: ClusterRole
+    name: svc-reader
+    apiGroup: ""
