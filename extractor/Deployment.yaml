@@ -35,6 +35,14 @@ spec:
           limits:
             memory: "1Gi"    # Limits the container to 1Gi of memory
             cpu: "1"         # Limits the container to 1 CPU core
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
       volumes:
       - name: upload-volume
         persistentVolumeClaim:
