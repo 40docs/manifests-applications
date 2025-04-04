@@ -24,7 +24,7 @@ spec:
   tls:
     - secretName: docs-tls
       hosts:
-        - 40docs.com
+        - extractor.40docs.com
   rules:
     - host: extractor.40docs.com
       http:
