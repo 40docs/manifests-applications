@@ -29,6 +29,12 @@ spec:
         - name: notes-volume
           mountPath: /app/notes
       volumes:
-      - name: extractor-storage
+      - name: upload-volume
+        persistentVolumeClaim:
+          claimName: extractor-pvc  # Reference to a PVC for storing uploaded files
+      - name: slides-volume
+        persistentVolumeClaim:
+          claimName: extractor-pvc  # Reference to a PVC for storing uploaded files
+      - name: notes-volume
         persistentVolumeClaim:
           claimName: extractor-pvc  # Reference to a PVC for storing uploaded files
