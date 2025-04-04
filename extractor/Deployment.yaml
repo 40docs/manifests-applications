@@ -23,11 +23,11 @@ spec:
             name: extractor-config
         volumeMounts:
         - name: upload-volume
-          mountPath: /uploads
+          mountPath: uploads
         - name: slides-volume
-          mountPath: /slides
+          mountPath: slides
         - name: notes-volume
-          mountPath: /notes
+          mountPath: notes
         resources:
           requests:
             memory: "512Mi"  # Requests 512MB of memory
