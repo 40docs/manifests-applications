@@ -21,6 +21,13 @@ spec:
         envFrom:
         - configMapRef:
             name: extractor-config
+        volumeMounts:
+        - name: upload-volume
+          mountPath: /app/uploads
+        - name: slides-volume
+          mountPath: /app/slides
+        - name: notes-volume
+          mountPath: /app/notes
         resources:
           requests:
             memory: "512Mi"  # Requests 512MB of memory
@@ -36,3 +43,13 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           failureThreshold: 3
+      volumes:
+      - name: upload-volume
+        persistentVolumeClaim:
+          claimName: extractor-pvc  # Reference to a PVC for storing uploaded files
+      - name: slides-volume
+        persistentVolumeClaim:
+          claimName: extractor-pvc  # Reference to a PVC for storing uploaded files
+      - name: notes-volume
+        persistentVolumeClaim:
+          claimName: extractor-pvc  # Reference to a PVC for storing uploaded files
