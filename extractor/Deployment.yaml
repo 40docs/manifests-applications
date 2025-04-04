@@ -28,13 +28,6 @@ spec:
           mountPath: /app/slides
         - name: notes-volume
           mountPath: /app/notes
-        resources:
-          requests:
-            memory: "512Mi"  # Requests 512MB of memory
-            cpu: "500m"      # Requests 500 milliCPU (0.5 CPU core)
-          limits:
-            memory: "1Gi"    # Limits the container to 1Gi of memory
-            cpu: "1"         # Limits the container to 1 CPU core
       volumes:
       - name: upload-volume
         persistentVolumeClaim:
