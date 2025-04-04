@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: extractor-config
-  namespace: default
+  namespace: extractor
 data:
   UPLOAD_DIR: "/app/uploads"  # Path where pptx files will be uploaded
   SLIDES_DIR: "/app/slides"   # Path where slide images will be stored
