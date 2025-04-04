@@ -21,6 +21,10 @@ metadata:
   }
 spec:
   ingressClassName: fwb-ingress-controller
+  tls:
+    - secretName: docs-tls
+      hosts:
+        - $DOMAIN_NAME
   rules:
     - host: extractor.40docs.com
       http:
