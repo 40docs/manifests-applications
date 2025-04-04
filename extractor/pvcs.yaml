@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: extractor-pvc
+  labels:
+    app: extractor
+spec:
+  accessModes:
+    - ReadWriteOnce  # Single-node access, you can adjust based on use case
+  resources:
+    requests:
+      storage: 5Gi  # Specify the size of the disk you want to allocate
+  storageClassName: managed-premium  # This is for Azure Disk storage (change based on your provider)
+  volumeMode: Filesystem

@@ -6,3 +6,4 @@ resources:
   - Ingress.yaml
   - rbac.yaml
   - Service.yaml
+  - pvcs.yaml
