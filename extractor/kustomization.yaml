@@ -4,6 +4,5 @@ kind: Kustomization
 resources:
   - pvcs.yaml
   - Deployment.yaml
-  - Ingress.yaml
   - rbac.yaml
   - Service.yaml
