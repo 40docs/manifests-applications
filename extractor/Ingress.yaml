@@ -7,7 +7,7 @@ metadata:
   annotations: {
     fortiweb-ip: "10.0.0.4",
     fortiweb-login: "fortiweb-login-secret",
-    fortiweb-port: "8443",
+    fortiweb-port: "443",
     fortiweb-ctrl-log: "disable",
     health-check-ctrl: "HLTHCK_HTTP",
     virtual-server-ip: "10.0.0.5",
