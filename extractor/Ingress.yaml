@@ -31,11 +31,4 @@ spec:
               service:
                 name: extractor
                 port:
-                  number: 8090
-          - path: /health
-            pathType: Exact
-            backend:
-              service:
-                name: extractor
-                port:
-                  number: 8090
+                  number: 5000
