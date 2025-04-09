@@ -8,6 +8,6 @@ spec:
     app: extractor
   ports:
     - protocol: TCP
-      port: 8090
+      port: 5000
       targetPort: 5000
   type: NodePort
