@@ -7,7 +7,7 @@ metadata:
   annotations: {
     fortiweb-ip: "10.0.0.4",
     fortiweb-login: "fortiweb-login-secret",
-    fortiweb-port: "8443",
+    fortiweb-port: "443",
     fortiweb-ctrl-log: "disable",
     health-check-ctrl: "HLTHCK_HTTP",
     virtual-server-ip: "10.0.0.6",
@@ -21,8 +21,12 @@ metadata:
   }
 spec:
   ingressClassName: fwb-ingress-controller
+  tls:
+    - secretName: dvwa-tls
+      hosts:
+        - $DOMAIN_NAME
   rules:
-    - host: dvwa.amerintlxperts.com
+    - host: $DOMAIN_NAME
       http:
         paths:
           - path: /
@@ -31,4 +35,4 @@ spec:
               service:
                 name: dvwa
                 port:
-                  number: 4280
+                  number: 8081
