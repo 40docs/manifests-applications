@@ -29,10 +29,4 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "1"
-          volumeMounts:
-            - mountPath: /app
-              name: extractor-pvc
-      volumes:
-        - name: extractor-pvc
-          persistentVolumeClaim:
-            claimName: extractor-pvc
+
