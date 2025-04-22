@@ -24,8 +24,8 @@ metadata:
   }
 spec:
   ports:
-    - port: 4280
-      targetPort: 4280
+    - port: 80
+      targetPort: 80
   selector:
     app: dvwa
   type: NodePort
