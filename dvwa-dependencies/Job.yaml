@@ -129,7 +129,7 @@ spec:
                 --data-binary "{\"data\":{\"name\":\"$INTERMEDIATE_CERT_ID\"}}" || error_exit "Failed to add certificate to the group."
 
               log_info "Adding HLTHCK_DVWA"
-              curl -X POST "https://10.0.0.4/api/v2.0/cmdb/server-policy/health/" \
+              curl -X POST "https://10.0.0.4/api/v2.0/cmdb/server-policy/health" \
                 --insecure \
                 --include \
                 --silent \
