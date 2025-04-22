@@ -36,7 +36,6 @@ jobs:
           mv dvwa-dependencies/certificate.processed.yaml dvwa-dependencies/certificate.yaml
           envsubst < dvwa/Ingress.yaml > dvwa/Ingress.processed.yaml
           mv dvwa/Ingress.processed.yaml dvwa/Ingress.yaml
-          yq eval -i ".spec.template.spec.containers[0].image = \"${{ secrets.ACR_LOGIN_SERVER }}/dvwa:${{ vars.DVWA_VERSION }}\"" "dvwa/Deployment.yaml"
 
       - name: Process production variables
         if: env.PRODUCTION_ENVIRONMENT == 'false'
