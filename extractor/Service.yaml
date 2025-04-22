@@ -5,7 +5,7 @@ metadata:
   name: extractor
   namespace: extractor
   annotations: {
-    "health-check-ctrl": "HLTHCK_HTTP"
+    "health-check-ctrl": "HLTHCK_EXTRACTOR"
   }
 spec:
   selector:
