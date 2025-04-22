@@ -24,9 +24,9 @@ spec:
   tls:
     - secretName: dvwa-tls
       hosts:
-        - $DOMAIN_NAME
+        - dvwa.40docs.com
   rules:
-    - host: $DOMAIN_NAME
+    - host: dvwa.40docs.com
       http:
         paths:
           - path: /
@@ -35,4 +35,4 @@ spec:
               service:
                 name: dvwa
                 port:
-                  number: 8081
+                  number: 4280
