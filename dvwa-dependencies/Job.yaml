@@ -135,7 +135,7 @@ spec:
                 --silent \
                 -H "Authorization:$TOKEN" \
                 -H "Content-Type: application/json" \
-                --data-binary '{"data":{"name":"HLTHCK_DVWA","health-list":[{"type":"http","url-path":"/login.php","match-type":"response-code"}]}}' \ || error_exit "Failed to add Health Check."
+                --data-binary '{"data":{"name":"HLTHCK_DVWA","health-list":[{"type":"http","url-path":"/login.php","match-type":"response-code"}]}}' || error_exit "Failed to add Health Check."
                 
               log_info "Job completed successfully."
 
