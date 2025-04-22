@@ -8,9 +8,9 @@ spec:
   secretName: artifacts-tls
   privateKey:
     rotationPolicy: Always
-  commonName: $DOMAIN_NAME
+  commonName: ollama.40docs.com
   dnsNames:
-    - $DOMAIN_NAME
+    - ollama.40docs.com
   usages:
     - digital signature
     - key encipherment

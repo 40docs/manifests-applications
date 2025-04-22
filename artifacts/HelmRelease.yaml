@@ -48,9 +48,9 @@ spec:
       tls:
         - secretName: artifacts-tls
           hosts:
-            - "$DOMAIN_NAME"
+            - "ollama.40docs.com"
       hosts:
-        - host: "$DOMAIN_NAME"
+        - host: "ollama.40docs.com"
           paths:
             - path: /
               pathType: Prefix
