@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - rbac.yaml
   - certificate.yaml
+  - Job.yaml
