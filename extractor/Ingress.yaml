@@ -17,7 +17,8 @@ metadata:
     server-policy-https-service: "HTTPS",
     server-policy-http-service: "HTTP",
     server-policy-syn-cookie: "enable",
-    server-policy-http-to-https: "disable"
+    server-policy-http-to-https: "disable",
+    server-policy-intermediate-certificate-group: "extractor_extractor_ca-group"
   }
 spec:
   ingressClassName: fwb-ingress-controller
