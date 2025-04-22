@@ -35,4 +35,4 @@ spec:
               service:
                 name: dvwa
                 port:
-                  number: 4280
+                  number: 8081
