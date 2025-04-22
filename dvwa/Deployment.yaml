@@ -20,6 +20,8 @@ spec:
           env:
             - name: DB_SERVER
               value: mariadb
+            - name: DEFAULT_SECURITY_LEVEL
+              value: low
           resources:
             requests:
               cpu: 1m
