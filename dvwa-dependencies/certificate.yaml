@@ -8,9 +8,15 @@ spec:
   secretName: dvwa-tls
   privateKey:
     rotationPolicy: Always
-  commonName: $DOMAIN_NAME
+  commonName: dvwa.40docs.com
   dnsNames:
-    - $DOMAIN_NAME
+    - dvwa.40docs.com
+    - app1.40docs.com
+    - app2.40docs.com
+    - app3.40docs.com
+    - app4.40docs.com
+    - app5.40docs.com
+    - app6.40docs.com
   usages:
     - digital signature
     - key encipherment
