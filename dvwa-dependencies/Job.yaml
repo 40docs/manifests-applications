@@ -128,6 +128,16 @@ spec:
                 -H "Content-Type: application/json" \
                 --data-binary "{\"data\":{\"name\":\"$INTERMEDIATE_CERT_ID\"}}" || error_exit "Failed to add certificate to the group."
 
+              log_info "Adding HLTHCK_DVWA"
+              curl -X POST "https://10.0.0.4/api/v2.0/cmdb/server-policy/health/members?mkey=dvwa_dvwa_ca-group" \
+                --insecure \
+                --include \
+                --silent \
+                -H "Authorization:$TOKEN" \
+                -H "Content-Type: application/json" \
+                --data-binary "{\"data\":{\"name\":\"HLTHCK_DVWA\",\"health-list\":[{\"type\":\"http\",\"url-path\":\"/login.php\",\"match-type\":\"response-code\"}]}}" || error_exit "Failed to add Health Check."
+
+
               log_info "Job completed successfully."
 
           resources:
