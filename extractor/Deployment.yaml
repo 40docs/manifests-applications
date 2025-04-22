@@ -21,7 +21,7 @@ spec:
             - containerPort: 5000
           envFrom:
             - configMapRef:
-              name: extractor-config
+                name: extractor-config
           resources:
             requests:
               memory: "512Mi"
