@@ -30,7 +30,7 @@ spec:
               cpu: 1000m
               memory: 512Mi
           ports:
-            - containerPort: 4280
+            - containerPort: 80
               name: http
         - name: mariadb
           image: mariadb:latest
