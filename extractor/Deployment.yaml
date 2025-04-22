@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,17 +15,17 @@ spec:
         app: extractor
     spec:
       containers:
-      - name: extractor
-        image: ghcr.io/40docs/pptx_extractor:latest  # Image name (change as needed)
-        ports:
-        - containerPort: 5000
-        envFrom:
-        - configMapRef:
-            name: extractor-config
-        resources:
-          requests:
-            memory: "512Mi"  # Requests 512MB of memory
-            cpu: "500m"      # Requests 500 milliCPU (0.5 CPU core)
-          limits:
-            memory: "1Gi"    # Limits the container to 1Gi of memory
-            cpu: "1"         # Limits the container to 1 CPU core
+        - name: extractor
+          image: ghcr.io/40docs/pptx_extractor:latest
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+              name: extractor-config
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
