@@ -11,3 +11,6 @@ spec:
       port: 5000
       targetPort: 5000
   type: NodePort
+  annotations: {
+    "health-check-ctrl": "HLTHCK_HTTP"
+  }

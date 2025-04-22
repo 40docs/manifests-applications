@@ -19,6 +19,9 @@ metadata:
   namespace: dvwa
   labels:
     app: dvwa
+  annotations: {
+    "health-check-ctrl": "HLTHCK_HTTP"
+  }
 spec:
   ports:
     - port: 8081

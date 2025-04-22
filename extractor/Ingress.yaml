@@ -9,7 +9,6 @@ metadata:
     fortiweb-login: "fortiweb-login-secret",
     fortiweb-port: "443",
     fortiweb-ctrl-log: "disable",
-    health-check-ctrl: "HLTHCK_HTTP",
     virtual-server-ip: "10.0.0.10",
     virtual-server-addr-type: "ipv4",
     virtual-server-interface: "port1",
