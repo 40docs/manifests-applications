@@ -9,7 +9,7 @@ spec:
     - port: 3306
       targetPort: 3306
   selector:
-    app: dvwa-mariadb
+    app: dvwa
   type: ClusterIP
 ---
 apiVersion: v1
@@ -27,5 +27,5 @@ spec:
     - port: 4280
       targetPort: 4280
   selector:
-    app: dvwa-mariadb
+    app: dvwa
   type: NodePort
