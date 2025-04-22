@@ -17,6 +17,7 @@ spec:
     - app4.40docs.com
     - app5.40docs.com
     - app6.40docs.com
+    - app7.40docs.com
   usages:
     - digital signature
     - key encipherment

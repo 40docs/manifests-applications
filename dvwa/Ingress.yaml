@@ -100,3 +100,13 @@ spec:
                 name: dvwa
                 port:
                   number: 80
+    - host: app7.40docs.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: dvwa
+                port:
+                  number: 80
