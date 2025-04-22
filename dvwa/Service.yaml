@@ -20,7 +20,7 @@ metadata:
   labels:
     app: dvwa
   annotations: {
-    "health-check-ctrl": "HLTHCK_HTTP"
+    "health-check-ctrl": "HLTHCK_DVWA"
   }
 spec:
   ports:
