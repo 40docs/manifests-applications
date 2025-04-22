@@ -2,7 +2,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: extractor
-  namespace: extractor  # Add this line to ensure the service is created in the correct namespace
+  namespace: extractor
+  annotations: {
+    "health-check-ctrl": "HLTHCK_HTTP"
+  }
 spec:
   selector:
     app: extractor
@@ -11,6 +14,4 @@ spec:
       port: 5000
       targetPort: 5000
   type: NodePort
-  annotations: {
-    "health-check-ctrl": "HLTHCK_HTTP"
-  }
+
