@@ -8,7 +8,6 @@ spec:
   secretName: dvwa-tls
   privateKey:
     rotationPolicy: Always
-  commonName: dvwa.40docs.com
   dnsNames:
     - dvwa.40docs.com
     - app1.40docs.com
