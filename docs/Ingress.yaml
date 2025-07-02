@@ -24,9 +24,9 @@ spec:
   tls:
     - secretName: docs-tls
       hosts:
-        - $DOMAIN_NAME
+        - docs.40docs.com
   rules:
-    - host: $DOMAIN_NAME
+    - host: docs.40docs.com
       http:
         paths:
           - path: /
